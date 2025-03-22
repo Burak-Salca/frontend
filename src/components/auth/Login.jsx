@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useEffect, useState } from 'react';
 
@@ -8,15 +8,15 @@ export default function Login() {
   const { login, isAuthenticated, error: authError } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
-      email: 'string@string.com',
-      password: 'String123-'
+      email: 'string@hotmail.com',
+      password: 'String1*'
     }
   });
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/profile');
     }
   }, [isAuthenticated, navigate]);
 
@@ -45,6 +45,7 @@ export default function Login() {
     if (validateForm(data)) {
       try {
         await login(data.email, data.password, data.role);
+        navigate('/profile');
       } catch (error) {
         console.error('Login error:', error);
       }
@@ -121,6 +122,15 @@ export default function Login() {
             </button>
           </div>
         </form>
+
+        <div className="text-center mt-4">
+          <Link
+            to="/register"
+            className="font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            Hesabınız yok mu? Kayıt olun
+          </Link>
+        </div>
       </div>
     </div>
   );

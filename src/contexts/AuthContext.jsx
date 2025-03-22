@@ -52,10 +52,6 @@ export const AuthProvider = ({ children }) => {
         password,
       });
       
-      console.log('Login Response:', response.data);
-      console.log('Token:', response.data.token);
-      console.log('User Data:', response.data.user);
-      
       const { access_token, user: userData } = response.data;
       
       if (!access_token || access_token === 'undefined') {
@@ -65,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('access_token', access_token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       setUser(userData);
-      return true;
+      return userData;
     } catch (error) {
       console.error('Login Error:', error);
       setError(error.response?.data?.message || error.message || 'Giriş işlemi başarısız oldu');

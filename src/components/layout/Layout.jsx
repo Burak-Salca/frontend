@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,38 +12,41 @@ function classNames(...classes) {
 
 export default function Layout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, logout, user } = useAuth();
 
   useEffect(() => {
     console.log('User:', user);
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    } else if (location.pathname === '/') {
+      navigate('/profile');
+    }
+  }, [isAuthenticated, navigate, location.pathname]);
+
   const navigation = [
     { name: 'Öğrenciler', href: '/students', current: false, roles: ['admin'] },
     { name: 'Adminler', href: '/admins', current: false, roles: ['admin'] },
     { name: 'Dersler', href: '/courses', current: false, roles: ['admin', 'student'] },
     { name: 'Kayıtlar', href: '/enrollments', current: false, roles: ['student'] },
+    { name: 'Öğrenci-Ders Listesi', href: '/student-courses', current: false, roles: ['admin'] },
     { name: 'Profilim', href: '/profile', current: false, roles: ['admin', 'student'] },
   ].filter(item => item.roles.includes(user?.type));
 
   const handleLogout = async () => {
     try {
       await axios.post('http://localhost:3001/auth/logout');
-      logout(); // Context'teki logout fonksiyonunu çağır
+      logout();
       navigate('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      // Hata olsa bile local state'i temizle
       logout();
       navigate('/login');
     }
   };
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-    }
-  }, [isAuthenticated, navigate]);
 
   if (!isAuthenticated) {
     return null;

@@ -7,16 +7,13 @@ export default function EnrollmentList() {
   const [availableCourses, setAvailableCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const { user } = useAuth();
 
-  const fetchEnrollments = async (page = 1) => {
+  const fetchEnrollments = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:3001/students/profile/myCourses?page=${page}`);
+      const response = await axios.get('http://localhost:3001/students/profile/myCourses');
       setEnrollments(response.data.data || []);
-      setTotalPages(Math.ceil((response.data.total || 0) / 10));
       setError(null);
     } catch (error) {
       setError('Kayıt listesi yüklenirken bir hata oluştu');
@@ -38,16 +35,16 @@ export default function EnrollmentList() {
   };
 
   useEffect(() => {
-    fetchEnrollments(currentPage);
+    fetchEnrollments();
     if (user?.role === 'student') {
       fetchAvailableCourses();
     }
-  }, [currentPage, user?.role]);
+  }, [user?.role]);
 
   const handleEnroll = async (courseId) => {
     try {
       await axios.post(`http://localhost:3001/students/profile/courses/${courseId}`);
-      await fetchEnrollments(currentPage);
+      await fetchEnrollments();
       await fetchAvailableCourses();
       alert('Derse başarıyla kayıt oldunuz!');
     } catch (error) {
@@ -59,9 +56,8 @@ export default function EnrollmentList() {
   const handleUnenroll = async (courseId) => {
     if (window.confirm('Bu dersten kaydınızı silmek istediğinizden emin misiniz?')) {
       try {
-        console.log('Attempting to unenroll from course:', courseId)
         await axios.delete(`http://localhost:3001/students/profile/courses/${courseId}`);
-        await fetchEnrollments(currentPage);
+        await fetchEnrollments();
         await fetchAvailableCourses();
         alert('Ders kaydınız başarıyla silindi!');
       } catch (error) {
@@ -103,7 +99,7 @@ export default function EnrollmentList() {
                     </div>
                     <button
                       onClick={() => handleEnroll(course.id)}
-                      className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                      className="text-green-600 hover:text-green-800 font-medium"
                     >
                       Kayıt Ol
                     </button>
@@ -119,7 +115,6 @@ export default function EnrollmentList() {
         {enrollments && enrollments.length > 0 ? (
           <ul className="divide-y divide-gray-200">
             {enrollments.map((enrollment) => {
-              // Backend'den gelen veri yapısını kontrol et
               const courseName = enrollment?.name || enrollment?.course?.name || 'İsimsiz Ders';
               const courseContent = enrollment?.content || enrollment?.course?.content || 'İçerik bulunmamaktadır.';
               const courseId = enrollment?.id || enrollment?.course?.id;
@@ -128,14 +123,12 @@ export default function EnrollmentList() {
                 <li key={courseId} className="px-6 py-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {courseName}
-                      </h3>
+                      <h3 className="text-lg font-medium text-gray-900">{courseName}</h3>
                       <p className="text-sm text-gray-500">{courseContent}</p>
                     </div>
                     <button
                       onClick={() => handleUnenroll(courseId)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-600 hover:text-red-800 font-medium"
                     >
                       Kaydı Sil
                     </button>
@@ -150,24 +143,6 @@ export default function EnrollmentList() {
           </div>
         )}
       </div>
-
-      {totalPages > 1 && (
-        <div className="flex justify-center space-x-2 mt-4">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`px-3 py-1 rounded ${
-                currentPage === page
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 } 

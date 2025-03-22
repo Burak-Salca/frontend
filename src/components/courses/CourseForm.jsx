@@ -1,78 +1,107 @@
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-export default function CourseForm({ onSuccess }) {
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+export default function CourseForm({ onSuccess, onCancel, initialData = null }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    content: ''
+  });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const validateForm = (data) => {
-    const errors = {};
-    
-    if (!data.name) {
-      errors.name = 'Ders adı zorunludur';
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || '',
+        content: initialData.content || ''
+      });
     }
+  }, [initialData]);
 
-    if (!data.content) {
-      errors.content = 'Ders içeriği zorunludur';
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (initialData?.id) {
+        await axios.put(`http://localhost:3001/courses/${initialData.id}`, formData);
+      } else {
+        await axios.post('http://localhost:3001/courses', formData);
+      }
+      onSuccess();
+    } catch (err) {
+      console.error('Error saving course:', err);
+      setError('Ders kaydedilirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
     }
-
-    return errors;
   };
 
-  const onSubmit = async (data) => {
-    const validationErrors = validateForm(data);
-    if (Object.keys(validationErrors).length === 0) {
-      try {
-        await axios.post('http://localhost:3001/courses', data);
-        reset();
-        if (onSuccess) onSuccess();
-      } catch (error) {
-        console.error('Error creating course:', error);
-      }
-    }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Ders Adı
-        </label>
-        <div className="mt-1">
+    <div className="bg-white shadow sm:rounded-lg p-6 mb-6">
+      <form onSubmit={handleSubmit}>
+        {error && (
+          <div className="mb-4 bg-red-50 text-red-800 p-4 rounded-md">
+            {error}
+          </div>
+        )}
+        
+        <div className="mb-4">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            Ders Adı
+          </label>
           <input
             type="text"
-            {...register('name')}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+            name="name"
+            id="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
-        {errors.name && (
-          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-        )}
-      </div>
 
-      <div>
-        <label htmlFor="content" className="block text-sm font-medium text-gray-700">
-          Ders İçeriği
-        </label>
-        <div className="mt-1">
+        <div className="mb-4">
+          <label htmlFor="content" className="block text-sm font-medium text-gray-700">
+            İçerik
+          </label>
           <textarea
-            {...register('content')}
+            name="content"
+            id="content"
+            value={formData.content}
+            onChange={handleChange}
+            required
             rows={4}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
-        {errors.content && (
-          <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>
-        )}
-      </div>
 
-      <div>
-        <button
-          type="submit"
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Ders Ekle
-        </button>
-      </div>
-    </form>
+        <div className="flex justify-end space-x-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            {loading ? 'Kaydediliyor...' : (initialData ? 'Güncelle' : 'Kaydet')}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 } 

@@ -2,23 +2,21 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import CourseForm from './CourseForm';
+import { useNavigate } from 'react-router-dom';
 
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const fetchCourses = async (page) => {
+  const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:3001/courses?page=${page}`);
-      console.log('Courses response:', response.data);
+      const response = await axios.get('http://localhost:3001/courses');
       setCourses(response.data.data || []);
-      setTotalPages(Math.ceil((response.data.total || 0) / 10));
       setError(null);
     } catch (err) {
       console.error('Error fetching courses:', err);
@@ -30,14 +28,14 @@ export default function CourseList() {
   };
 
   useEffect(() => {
-    fetchCourses(currentPage);
-  }, [currentPage]);
+    fetchCourses();
+  }, []);
 
   const handleDelete = async (id) => {
     if (window.confirm('Bu dersi silmek istediğinizden emin misiniz?')) {
       try {
         await axios.delete(`http://localhost:3001/courses/${id}`);
-        await fetchCourses(currentPage);
+        await fetchCourses();
         alert('Ders başarıyla silindi!');
       } catch (err) {
         console.error('Error deleting course:', err);
@@ -58,102 +56,82 @@ export default function CourseList() {
 
   const handleSuccess = () => {
     setShowForm(false);
-    fetchCourses(currentPage);
+    fetchCourses();
   };
 
   if (loading) {
-    return <div>Yükleniyor...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-600">{error}</div>;
+    return <div className="text-center">Yükleniyor...</div>;
   }
 
   return (
-    <div>
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Ders Listesi</h1>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Ders Listesi</h1>
         {user?.type === 'admin' && (
-          <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-            <button
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
-            >
-              Ders Ekle
-            </button>
-          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Ders Ekle
+          </button>
         )}
       </div>
 
+      {error && (
+        <div className="bg-red-50 text-red-800 p-4 rounded-md mb-4">
+          {error}
+        </div>
+      )}
+
       {showForm && <CourseForm onSuccess={handleSuccess} onCancel={() => setShowForm(false)} />}
 
-      <div className="mt-8 flex flex-col">
-        <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                      Ders Adı
-                    </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      İçerik
-                    </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                      <span className="sr-only">İşlemler</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {courses.map((course) => (
-                    <tr key={course.id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                        {course.name}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{course.content}</td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        {user?.type === 'admin' ? (
-                          <button
-                            onClick={() => handleDelete(course.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Sil
-                          </button>
-                        ) : user?.type === 'student' ? (
-                          <button
-                            onClick={() => handleEnroll(course.id)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            Kayıt Ol
-                          </button>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        {courses && courses.length > 0 ? (
+          <ul className="divide-y divide-gray-200">
+            {courses.map((course) => (
+              <li key={course.id} className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      {course.name || 'İsimsiz Ders'}
+                    </h3>
+                    <p className="text-sm text-gray-500">{course.content || 'İçerik bulunmamaktadır.'}</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    {user?.type === 'student' && (
+                      <button
+                        onClick={() => handleEnroll(course.id)}
+                        className="text-green-600 hover:text-green-800 font-medium"
+                      >
+                        Kayıt Ol
+                      </button>
+                    )}
+                    {user?.type === 'admin' && (
+                      <>
+                        <button
+                          onClick={() => navigate(`/courses/${course.id}`)}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Görüntüle
+                        </button>
+                        <button
+                          onClick={() => handleDelete(course.id)}
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        >
+                          Sil
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="text-center py-4 text-gray-500">
+            Henüz ders bulunmamaktadır.
           </div>
-        </div>
-      </div>
-
-      <div className="mt-4 flex justify-center space-x-2">
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-          <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
-            className={`px-3 py-1 rounded ${
-              currentPage === page
-                ? 'bg-indigo-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {page}
-          </button>
-        ))}
+        )}
       </div>
     </div>
   );

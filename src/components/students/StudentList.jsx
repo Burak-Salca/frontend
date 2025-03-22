@@ -2,22 +2,21 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import StudentForm from './StudentForm';
 import EditStudentForm from './EditStudentForm';
+import { useNavigate } from 'react-router-dom';
 
 export default function StudentList() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [editingStudent, setEditingStudent] = useState(null);
+  const navigate = useNavigate();
 
-  const fetchStudents = async (page = 1) => {
+  const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:3001/students?page=${page}`);
+      const response = await axios.get('http://localhost:3001/students');
       setStudents(response.data.data || []);
-      setTotalPages(Math.ceil((response.data.total || 0) / (response.data.perPage || 10)));
       setError(null);
     } catch (error) {
       setError('Öğrenci listesi yüklenirken bir hata oluştu');
@@ -29,14 +28,14 @@ export default function StudentList() {
   };
 
   useEffect(() => {
-    fetchStudents(currentPage);
-  }, [currentPage]);
+    fetchStudents();
+  }, []);
 
   const handleDelete = async (id) => {
     if (window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz?')) {
       try {
         await axios.delete(`http://localhost:3001/students/${id}`);
-        await fetchStudents(currentPage);
+        await fetchStudents();
         alert('Öğrenci başarıyla silindi!');
       } catch (error) {
         setError('Öğrenci silinirken bir hata oluştu');
@@ -47,21 +46,20 @@ export default function StudentList() {
 
   const handleAddSuccess = () => {
     setShowAddForm(false);
-    fetchStudents(1);
-    setCurrentPage(1);
+    fetchStudents();
   };
 
   const handleEditSuccess = () => {
     setEditingStudent(null);
-    fetchStudents(currentPage);
+    fetchStudents();
+  };
+
+  const handleViewStudent = (studentId) => {
+    navigate(`/students/${studentId}`);
   };
 
   if (loading) {
     return <div className="text-center">Yükleniyor...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-600">{error}</div>;
   }
 
   return (
@@ -70,11 +68,17 @@ export default function StudentList() {
         <h1 className="text-2xl font-bold text-gray-900">Öğrenci Listesi</h1>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
           {showAddForm ? 'İptal' : 'Öğrenci Ekle'}
         </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-800 p-4 rounded-md mb-4">
+          {error}
+        </div>
+      )}
 
       {editingStudent && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
@@ -117,16 +121,16 @@ export default function StudentList() {
                     </h3>
                     <p className="text-sm text-gray-500">{student.email}</p>
                   </div>
-                  <div>
+                  <div className="flex space-x-2">
                     <button
-                      onClick={() => setEditingStudent(student)}
-                      className="text-indigo-600 hover:text-indigo-800 mr-2"
+                      onClick={() => handleViewStudent(student.id)}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      Düzenle
+                      Görüntüle
                     </button>
                     <button
                       onClick={() => handleDelete(student.id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                     >
                       Sil
                     </button>
@@ -141,24 +145,6 @@ export default function StudentList() {
           </div>
         )}
       </div>
-
-      {totalPages > 1 && (
-        <div className="flex justify-center space-x-2 mt-4">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              className={`px-3 py-1 rounded ${
-                currentPage === page
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 } 

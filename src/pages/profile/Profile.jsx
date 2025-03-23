@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useContext } from 'react';
+import { AuthContext } from '../../contexts/AuthContext';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const authContext = useContext(AuthContext);
+  const { user, setUser } = authContext;
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -11,7 +13,7 @@ export default function Profile() {
     lastName: '',
     password: '',
   });
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState([]);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function Profile() {
         email: user.email || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        password: '',
+        password: ''
       });
     }
   }, [user]);
@@ -28,26 +30,37 @@ export default function Profile() {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value, //Değişen inputları yazdır
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setErrors([]);
     setSuccess(false);
+
+    // Şifre boş ise onu hariç tut, diğer alanları gönder
+    const dataToSend = { ...formData };
+    if (!dataToSend.password) {
+      delete dataToSend.password;
+    }
 
     try {
       const endpoint = user?.type === 'admin' 
         ? `http://localhost:3001/admins/${user.id}`
         : 'http://localhost:3001/students/profile/update';
       
-      const method = user?.type === 'admin' ? 'put' : 'patch';
+      const response = await axios.patch(endpoint, dataToSend);
       
-      const response = await axios[method](endpoint, formData);
+      // Başarılı güncellemeden sonra AuthContext'teki user bilgilerini güncelle
+      setUser({
+        ...user,
+        ...dataToSend,  
+      });
       
       setSuccess(true);
       setShowForm(false);
+
       // Form başarıyla gönderildikten sonra şifre alanını temizle
       setFormData(prev => ({
         ...prev,
@@ -55,7 +68,20 @@ export default function Profile() {
       }));
     } catch (err) {
       console.error('Profile update error:', err);
-      setError('Profil güncellenirken bir hata oluştu.');
+      
+      if (err.response?.data?.data) {
+        const allErrors = [];
+        for (const error of err.response.data.data) {
+          for (const message of error.errors) {
+            allErrors.push(message);
+          }
+        }
+        setErrors(allErrors);
+      } else if (err.response?.data?.message) {
+        setErrors([err.response.data.message]);
+      } else {
+        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
+      }
     }
   };
 
@@ -63,20 +89,28 @@ export default function Profile() {
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Profil Bilgilerim</h1>
       
-      {error && (
-        <div className="bg-red-50 text-red-800 p-4 rounded-md mb-4">
-          {error}
+      {errors.length > 0 && (
+        <div className="mb-6 bg-red-50 border border-red-400 rounded-md p-4">
+          <div className="text-red-700">
+            <ul className="list-disc list-inside">
+              {errors.map((error, index) => (
+                <li key={index} className="text-sm">
+                  {error}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 text-green-800 p-4 rounded-md mb-4">
+        <div className="space-y-6 bg-green-50 text-green-800 p-4 rounded-md mb-4">
           Profil başarıyla güncellendi!
         </div>
       )}
 
       {!showForm ? (
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div className=" space-y-6 bg-white shadow overflow-hidden sm:rounded-lg">
           <div className="px-4 py-5 sm:px-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900">Kişisel Bilgiler</h3>
           </div>
@@ -98,7 +132,10 @@ export default function Profile() {
           </div>
           <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                setShowForm(true);
+                setErrors([]);  
+              }}
               className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Profil Bilgilerimi Güncelle
@@ -106,7 +143,7 @@ export default function Profile() {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white shadow sm:rounded-lg p-6">
+        <form onSubmit={handleSubmit} className="space-y-6 bg-white shadow sm:rounded-lg p-6" noValidate>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               E-posta
@@ -118,7 +155,6 @@ export default function Profile() {
               value={formData.email}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              required
             />
           </div>
 
@@ -133,7 +169,6 @@ export default function Profile() {
               value={formData.firstName}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              required
             />
           </div>
 
@@ -148,7 +183,6 @@ export default function Profile() {
               value={formData.lastName}
               onChange={handleChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              required
             />
           </div>
 
@@ -169,7 +203,11 @@ export default function Profile() {
           <div className="flex justify-end space-x-3">
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false);
+                setErrors([]); 
+                setSuccess(false);
+              }}
               className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               İptal

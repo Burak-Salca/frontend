@@ -1,16 +1,16 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import Layout from './components/layout/Layout';
-import StudentList from './components/students/StudentList';
-import StudentDetail from './components/students/StudentDetail';
-import StudentCourseList from './components/students/StudentCourseList';
-import CourseList from './components/courses/CourseList';
-import EnrollmentList from './components/enrollments/EnrollmentList';
-import Login from './components/auth/Login';
-import Profile from './components/profile/Profile';
-import AdminList from './components/admins/AdminList';
-import CourseDetail from './components/courses/CourseDetail';
-import Register from './components/auth/Register';
+import Layout from './pages/layout/Layout';
+import StudentList from './pages/students/StudentList';
+import StudentDetail from './pages/students/StudentDetail';
+import StudentCourseList from './pages/students/StudentCourseList';
+import CourseList from './pages/courses/CourseList';
+import EnrollmentList from './pages/enrollments/EnrollmentList';
+import Login from './pages/auth/Login';
+import Profile from './pages/profile/Profile';
+import AdminList from './pages/admins/AdminList';
+import CourseDetail from './pages/courses/CourseDetail';
+import Register from './pages/auth/Register';
 
 function App() {
   return (

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import { AuthContext } from '../../contexts/AuthContext';
 import CourseForm from './CourseForm';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,7 +9,8 @@ export default function CourseList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const { user } = useAuth();
+  const authContext = useContext(AuthContext);
+  const { user } = authContext;
   const navigate = useNavigate();
 
   const fetchCourses = async () => {

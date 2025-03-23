@@ -1,18 +1,14 @@
-import { useForm } from 'react-hook-form';
+import { useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { useEffect, useState } from 'react';
+import { AuthContext } from '../../contexts/AuthContext';
+import { useState } from 'react';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isAuthenticated, error: authError } = useAuth();
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: {
-      email: 'string@hotmail.com',
-      password: 'String1*'
-    }
-  });
-  const [validationErrors, setValidationErrors] = useState({});
+  const authContext = useContext(AuthContext);
+  const { login, isAuthenticated } = authContext;
+  const [errors, setErrors] = useState([]);
+  
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -20,34 +16,38 @@ export default function Login() {
     }
   }, [isAuthenticated, navigate]);
 
-  const validateForm = (data) => {
-    const errors = {};
-    
-    if (!data.email) {
-      errors.email = 'Email adresi zorunludur';
-    } else if (!/\S+@\S+\.\S+/.test(data.email)) {
-      errors.email = 'Geçerli bir email adresi giriniz';
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrors([]);
+
+    const formData = {
+      email: e.target.email.value,
+      password: e.target.password.value,
+      role: e.target.role.value
+    };
+
+    if (!formData.role) {
+      setErrors(['Rol seçimi zorunludur']);
+      return;
     }
 
-    if (!data.password) {
-      errors.password = 'Şifre zorunludur';
-    }
-
-    if (!data.role) {
-      errors.role = 'Rol seçimi zorunludur';
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const onSubmit = async (data) => {
-    if (validateForm(data)) {
-      try {
-        await login(data.email, data.password, data.role);
-        navigate('/profile');
-      } catch (error) {
-        console.error('Login error:', error);
+    try {
+      await login(formData.email, formData.password, formData.role);
+      navigate('/profile');
+    } catch (err) {
+      console.error('Login error:', err);
+      if (err.response?.data?.data) {
+        const allErrors = [];
+        for (const error of err.response.data.data) {
+          for (const message of error.errors) {
+            allErrors.push(message);
+          }
+        }
+        setErrors(allErrors);
+      } else if (err.response?.data?.message) {
+        setErrors([err.response.data.message]);
+      } else {
+        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
       }
     }
   };
@@ -59,57 +59,55 @@ export default function Login() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Hesabınıza giriş yapın
           </h2>
-        </div>
-        {authError && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  {authError}
-                </h3>
+          {errors.length > 0 && (
+            <div className="mt-4 bg-red-50 border border-red-400 rounded-md p-4">
+              <div className="text-red-700">
+                <ul className="list-disc list-inside">
+                  {errors.map((error, index) => (
+                    <li key={index} className="text-sm">
+                      {error}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
-          </div>
-        )}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          )}
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">Email adresi</label>
               <input
-                {...register('email')}
+                id="email"
+                name="email"
                 type="email"
+                defaultValue="Deneme1@hotmail.com"//Sonra kaldırılcaklar 
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email adresi"
               />
-              {validationErrors.email && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
-              )}
             </div>
             <div>
               <label htmlFor="password" className="sr-only">Şifre</label>
               <input
-                {...register('password')}
+                id="password"
+                name="password"
                 type="password"
+                defaultValue="Deneme1*" //Sonra kaldırılcaklar
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Şifre"
               />
-              {validationErrors.password && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
-              )}
             </div>
             <div>
               <label htmlFor="role" className="sr-only">Rol</label>
               <select
-                {...register('role')}
+                id="role"
+                name="role"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
               >
                 <option value="">Rol seçiniz</option>
                 <option value="admin">Admin</option>
                 <option value="student">Öğrenci</option>
               </select>
-              {validationErrors.role && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.role}</p>
-              )}
             </div>
           </div>
 

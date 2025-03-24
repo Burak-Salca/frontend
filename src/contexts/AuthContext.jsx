@@ -8,34 +8,39 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userData');
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, []);
-
-  useEffect(() => {
+  const checkLocalStorage = () => {
     const token = localStorage.getItem('token');
-    if (token && token !== 'undefined') {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      const userData = JSON.parse(localStorage.getItem('userData'));
-      if (userData) {
-        setUser(userData);
+    const userData = localStorage.getItem('userData');
+
+    if (token && token !== 'undefined' && userData) {
+      try {
+        const parsedUserData = JSON.parse(userData);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setUser(parsedUserData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Local storage parse error:', error);
+        clearAuthData();
       }
     } else {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userData');
-      delete axios.defaults.headers.common['Authorization'];
+      clearAuthData();
     }
+  };
+
+  useEffect(() => {
+    checkLocalStorage();
   }, []);
+
+  const clearAuthData = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
+    setIsAuthenticated(false);
+    setError(null);
+  };
 
   const login = async (email, password, role) => {
     try {
@@ -56,6 +61,7 @@ export const AuthProvider = ({ children }) => {
       
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       setUser(userData);
+      setIsAuthenticated(true);
       return userData;
     } catch (error) {
       console.error('Login Error:', error);
@@ -65,11 +71,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userData');
-    delete axios.defaults.headers.common['Authorization'];
-    setUser(null);
-    setError(null);
+    clearAuthData();
   };
 
   const value = {
@@ -78,7 +80,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     error,
-    isAuthenticated: !!user,
+    isAuthenticated,
   };
 
   return (

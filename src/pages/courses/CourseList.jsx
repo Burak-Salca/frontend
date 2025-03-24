@@ -2,29 +2,26 @@ import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../../contexts/AuthContext';
 import CourseForm from './CourseForm';
-import { useNavigate } from 'react-router-dom';
+import ErrorMap from '../../components/ErrorMap';
+import CourseMap from '../../components/CourseMap';
 
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const authContext = useContext(AuthContext);
-  const { user } = authContext;
-  const navigate = useNavigate();
+  const { user } = authContext; // Usera göre işlem yapılacak 
+ 
 
   const fetchCourses = async () => {
     try {
-      setLoading(true);
       const response = await axios.get('http://localhost:3001/courses');
       setCourses(response.data.data || []);
-      setError(null);
+      setErrors([]);
     } catch (err) {
       console.error('Error fetching courses:', err);
-      setError('Dersler yüklenirken bir hata oluştu.');
+      setErrors(['Dersler yüklenirken bir hata oluştu.']);
       setCourses([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -32,6 +29,7 @@ export default function CourseList() {
     fetchCourses();
   }, []);
 
+  //Adminin kullancağı fonksiyon 
   const handleDelete = async (id) => {
     if (window.confirm('Bu dersi silmek istediğinizden emin misiniz?')) {
       try {
@@ -40,29 +38,40 @@ export default function CourseList() {
         alert('Ders başarıyla silindi!');
       } catch (err) {
         console.error('Error deleting course:', err);
-        setError('Ders silinirken bir hata oluştu.');
+        setErrors(['Ders silinirken bir hata oluştu.']);
       }
     }
   };
 
+  //Öğrencinin kullancağı fonksiyon 
   const handleEnroll = async (courseId) => {
     try {
       await axios.post(`http://localhost:3001/students/profile/courses/${courseId}`);
       alert('Derse başarıyla kayıt oldunuz!');
     } catch (err) {
-      console.error('Error enrolling to course:', err);
-      setError('Derse kayıt olurken bir hata oluştu.');
+      console.error('Profile update error:', err);
+      
+      if (err.response?.data?.data) {
+        const allErrors = [];
+        for (const error of err.response.data.data) {
+          for (const message of error.errors) {
+            allErrors.push(message);
+          }
+        }
+        setErrors(allErrors);
+      } else if (err.response?.data?.message) {
+        setErrors([err.response.data.message]);
+      } else {
+        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
+      }
     }
   };
 
+  //Ders create etme için kullanılacak fonksiyon 
   const handleSuccess = () => {
     setShowForm(false);
     fetchCourses();
   };
-
-  if (loading) {
-    return <div className="text-center">Yükleniyor...</div>;
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -78,61 +87,19 @@ export default function CourseList() {
         )}
       </div>
 
-      {error && (
-        <div className="bg-red-50 text-red-800 p-4 rounded-md mb-4">
-          {error}
-        </div>
-      )}
+      <ErrorMap errors={errors} />
 
       {showForm && <CourseForm onSuccess={handleSuccess} onCancel={() => setShowForm(false)} />}
 
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        {courses && courses.length > 0 ? (
-          <ul className="divide-y divide-gray-200">
-            {courses.map((course) => (
-              <li key={course.id} className="px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">
-                      {course.name || 'İsimsiz Ders'}
-                    </h3>
-                    <p className="text-sm text-gray-500">{course.content || 'İçerik bulunmamaktadır.'}</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    {user?.type === 'student' && (
-                      <button
-                        onClick={() => handleEnroll(course.id)}
-                        className="text-green-600 hover:text-green-800 font-medium"
-                      >
-                        Kayıt Ol
-                      </button>
-                    )}
-                    {user?.type === 'admin' && (
-                      <>
-                        <button
-                          onClick={() => navigate(`/courses/${course.id}`)}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          Görüntüle
-                        </button>
-                        <button
-                          onClick={() => handleDelete(course.id)}
-                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        >
-                          Sil
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="text-center py-4 text-gray-500">
-            Henüz ders bulunmamaktadır.
-          </div>
-        )}
+        <CourseMap 
+          courses={courses}
+          user={user}
+          onEnroll={handleEnroll}
+          onDelete={handleDelete}
+          showViewButton={true}
+          emptyMessage="Henüz ders bulunmamaktadır."
+        />
       </div>
     </div>
   );

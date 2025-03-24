@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import ErrorMap from '../../components/ErrorMap';
 
 export default function CourseForm({ onSuccess, onCancel, initialData = null }) {
   const [formData, setFormData] = useState({
     name: '',
     content: ''
   });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState([]);
 
   useEffect(() => {
     if (initialData) {
@@ -20,8 +20,7 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    setErrors([]);
 
     try {
       if (initialData?.id) {
@@ -31,10 +30,21 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
       }
       onSuccess();
     } catch (err) {
-      console.error('Error saving course:', err);
-      setError('Ders kaydedilirken bir hata oluştu.');
-    } finally {
-      setLoading(false);
+      console.error('Course form error:', err);
+      
+      if (err.response?.data?.data) {
+        const allErrors = [];
+        for (const error of err.response.data.data) {
+          for (const message of error.errors) {
+            allErrors.push(message);
+          }
+        }
+        setErrors(allErrors);
+      } else if (err.response?.data?.message) {
+        setErrors([err.response.data.message]);
+      } else {
+        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
+      }
     }
   };
 
@@ -49,11 +59,8 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
   return (
     <div className="bg-white shadow sm:rounded-lg p-6 mb-6">
       <form onSubmit={handleSubmit}>
-        {error && (
-          <div className="mb-4 bg-red-50 text-red-800 p-4 rounded-md">
-            {error}
-          </div>
-        )}
+        
+        <ErrorMap errors={errors} />
         
         <div className="mb-4">
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -65,7 +72,6 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
             id="name"
             value={formData.name}
             onChange={handleChange}
-            required
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
@@ -79,7 +85,6 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
             id="content"
             value={formData.content}
             onChange={handleChange}
-            required
             rows={4}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
@@ -95,10 +100,9 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
           </button>
           <button
             type="submit"
-            disabled={loading}
             className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
-            {loading ? 'Kaydediliyor...' : (initialData ? 'Güncelle' : 'Kaydet')}
+            {initialData ? 'Güncelle' : 'Kaydet'}
           </button>
         </div>
       </form>

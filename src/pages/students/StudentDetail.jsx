@@ -1,8 +1,9 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import EditStudentForm from './EditStudentForm';
+import StudentForm from './StudentForm';
 import { AuthContext } from '../../contexts/AuthContext';
+import CourseMap from '../../components/CourseMap';
 
 export default function StudentDetail() {
   const { id } = useParams();
@@ -100,30 +101,38 @@ export default function StudentDetail() {
     );
   }
 
+  if (!student) {
+    return (
+      <div className="text-center text-gray-500">
+        Öğrenci bulunamadı.
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-6 flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Öğrenci Detayları</h1>
         <div className="flex space-x-2">
           <button
             onClick={() => navigate('/students')}
-            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
-            Geri Dön
+            Geri
           </button>
           <button
-            onClick={() => setShowEditForm(true)}
-            className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            onClick={() => setShowEditForm(!showEditForm)}
+            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
-            Düzenle
+            {showEditForm ? 'İptal' : 'Düzenle'}
           </button>
         </div>
       </div>
 
       {showEditForm ? (
         <div className="bg-white shadow sm:rounded-lg p-6">
-          <EditStudentForm
-            student={student}
+          <StudentForm
+            initialData={student}
             onSuccess={handleEditSuccess}
             onCancel={() => setShowEditForm(false)}
           />
@@ -131,88 +140,63 @@ export default function StudentDetail() {
       ) : (
         <div className="space-y-6">
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
+            <div className="px-6 py-5 border-b border-gray-200">
               <h3 className="text-lg leading-6 font-medium text-gray-900">Kişisel Bilgiler</h3>
             </div>
-            <div className="border-t border-gray-200">
-              <dl>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <div className="px-6 py-5">
+              <dl className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
+                <div className="sm:col-span-1">
                   <dt className="text-sm font-medium text-gray-500">Ad</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {student?.firstName}
-                  </dd>
+                  <dd className="mt-1 text-sm text-gray-900">{student.firstName}</dd>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="sm:col-span-1">
                   <dt className="text-sm font-medium text-gray-500">Soyad</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {student?.lastName}
-                  </dd>
+                  <dd className="mt-1 text-sm text-gray-900">{student.lastName}</dd>
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="sm:col-span-2">
                   <dt className="text-sm font-medium text-gray-500">E-posta</dt>
-                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {student?.email}
-                  </dd>
+                  <dd className="mt-1 text-sm text-gray-900">{student.email}</dd>
                 </div>
               </dl>
             </div>
           </div>
 
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
+            <div className="px-6 py-5 border-b border-gray-200">
               <h3 className="text-lg leading-6 font-medium text-gray-900">Kayıtlı Dersler</h3>
             </div>
-            <div className="border-t border-gray-200">
-              {user?.type === 'admin' && (
-                <div className="px-4 py-5 sm:px-6 bg-gray-50">
-                  <div className="flex space-x-4">
-                    <select
-                      value={selectedCourse}
-                      onChange={(e) => setSelectedCourse(e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    >
-                      <option value="">Ders Seçin</option>
-                      {availableCourses.map((course) => (
-                        <option key={course.id} value={course.id}>
-                          {course.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={handleAddCourse}
-                      disabled={!selectedCourse}
-                      className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                      Ders Ekle
-                    </button>
-                  </div>
-                </div>
-              )}
-              <div className="px-4 py-5 sm:px-6">
-                {student?.courses?.length > 0 ? (
-                  <ul className="divide-y divide-gray-200">
-                    {student.courses.map((course) => (
-                      <li key={course.id} className="py-4 flex justify-between items-center">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">{course.name}</h4>
-                          <p className="text-sm text-gray-500">{course.content}</p>
-                        </div>
-                        {user?.type === 'admin' && (
-                          <button
-                            onClick={() => handleRemoveCourse(course.id)}
-                            className="ml-4 inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                          >
-                            Dersi Sil
-                          </button>
-                        )}
-                      </li>
+            {user?.type === 'admin' && (
+              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <div className="flex space-x-4">
+                  <select
+                    value={selectedCourse}
+                    onChange={(e) => setSelectedCourse(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  >
+                    <option value="">Ders Seçin</option>
+                    {availableCourses.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                      </option>
                     ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-gray-500">Henüz kayıtlı ders bulunmamaktadır.</p>
-                )}
+                  </select>
+                  <button
+                    onClick={handleAddCourse}
+                    disabled={!selectedCourse}
+                    className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Ders Ekle
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
+            <CourseMap 
+              courses={student?.courses || []}
+              user={user}
+              onRemove={handleRemoveCourse}
+              showViewButton={false}
+              emptyMessage="Henüz kayıtlı ders bulunmamaktadır."
+            />
           </div>
         </div>
       )}

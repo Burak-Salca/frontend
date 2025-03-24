@@ -1,122 +1,148 @@
-import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import ErrorMap from '../../components/ErrorMap';
 
-export default function AdminForm({ onSuccess }) {
-  const { register, handleSubmit, formState: { errors }, reset } = useForm();
+export default function AdminForm({ onSuccess, onCancel, initialData = null }) {
+  const [formData, setFormData] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState([]);
 
-  const validateForm = (data) => {
-    const errors = {};
-    
-    if (!data.firstName) {
-      errors.firstName = 'Ad alanı zorunludur';
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        email: initialData.email || '',
+        firstName: initialData.firstName || '',
+        lastName: initialData.lastName || '',
+        password: '' // Güvenlik için şifre alanını boş bırakıyoruz
+      });
     }
+  }, [initialData]);
 
-    if (!data.lastName) {
-      errors.lastName = 'Soyad alanı zorunludur';
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrors([]);
 
-    if (!data.email) {
-      errors.email = 'Email alanı zorunludur';
-    } else if (!/\S+@\S+\.\S+/.test(data.email)) {
-      errors.email = 'Geçerli bir email adresi giriniz';
-    }
-
-    if (!data.password) {
-      errors.password = 'Şifre alanı zorunludur';
-    } else if (data.password.length < 6) {
-      errors.password = 'Şifre en az 6 karakter olmalıdır';
-    }
-
-    return errors;
-  };
-
-  const onSubmit = async (data) => {
-    const validationErrors = validateForm(data);
-    if (Object.keys(validationErrors).length === 0) {
-      try {
-        await axios.post('http://localhost:3001/admins', data);
-        reset();
-        if (onSuccess) onSuccess();
-      } catch (error) {
-        console.error('Error creating admin:', error);
+    try {
+      const dataToSend = { ...formData };
+      if (initialData?.id) {
+        // Güncelleme işleminde şifre boşsa gönderme
+        if (!dataToSend.password) {
+          delete dataToSend.password;
+        }
+        await axios.patch(`http://localhost:3001/admins/${initialData.id}`, dataToSend);
+      } else {
+        await axios.post('http://localhost:3001/admins', dataToSend);
+      }
+      onSuccess();
+    } catch (err) {
+      console.error('Admin form error:', err);
+      
+      if (err.response?.data?.data) {
+        const allErrors = [];
+        for (const error of err.response.data.data) {
+          for (const message of error.errors) {
+            allErrors.push(message);
+          }
+        }
+        setErrors(allErrors);
+      } else if (err.response?.data?.message) {
+        setErrors([err.response.data.message]);
+      } else {
+        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
       }
     }
   };
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div>
-        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-          Ad
-        </label>
-        <div className="mt-1">
-          <input
-            type="text"
-            {...register('firstName')}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-          />
-        </div>
-        {errors.firstName && (
-          <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-        )}
-      </div>
+    <div className="bg-white shadow sm:rounded-lg p-6 mb-6">
+      <form onSubmit={handleSubmit} noValidate>
+      
+        <ErrorMap errors={errors} />
 
-      <div>
-        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-          Soyad
-        </label>
-        <div className="mt-1">
-          <input
-            type="text"
-            {...register('lastName')}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-          />
-        </div>
-        {errors.lastName && (
-          <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <div className="mt-1">
+        <div className="mb-4">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            E-posta
+          </label>
           <input
             type="email"
-            {...register('email')}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+            name="email"
+            id="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
-        {errors.email && (
-          <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-        )}
-      </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Şifre
-        </label>
-        <div className="mt-1">
+        <div className="mb-4">
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+            Ad
+          </label>
+          <input
+            type="text"
+            name="firstName"
+            id="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+            Soyad
+          </label>
+          <input
+            type="text"
+            name="lastName"
+            id="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            Şifre {initialData && <span className="text-gray-500">(değiştirmek istemiyorsanız boş bırakın)</span>}
+          </label>
           <input
             type="password"
-            {...register('password')}
-            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+            name="password"
+            id="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
-        {errors.password && (
-          <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-        )}
-      </div>
 
-      <div>
-        <button
-          type="submit"
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Admin Ekle
-        </button>
-      </div>
-    </form>
+        <div className="flex justify-end space-x-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            İptal
+          </button>
+          <button
+            type="submit"
+            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            {initialData ? 'Güncelle' : 'Kaydet'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 } 

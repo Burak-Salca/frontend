@@ -2,22 +2,24 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CourseForm from './CourseForm';
+import ErrorMap from '../../components/ErrorMap';
+import StudentMap from '../../components/StudentMap';
 
 export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState([]);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [success, setSuccess] = useState('');
 
   const fetchCourse = async () => {
     try {
       const response = await axios.get(`http://localhost:3001/courses/${id}`);
       setCourse(response.data.data);
     } catch (error) {
-      setError('Ders bilgileri yüklenirken bir hata oluştu');
+      setErrors(['Ders bilgileri yüklenirken bir hata oluştu']);
       console.error('Error fetching course:', error);
     }
   };
@@ -28,14 +30,12 @@ export default function CourseDetail() {
       setStudents(response.data.data || []);
     } catch (error) {
       console.error('Error fetching enrolled students:', error);
-    } finally {
-      setLoading(false);
+      setErrors(['Kayıtlı öğrenciler yüklenirken bir hata oluştu']);
     }
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
       await fetchCourse();
       await fetchEnrolledStudents();
     };
@@ -47,19 +47,22 @@ export default function CourseDetail() {
     fetchCourse();
   };
 
-  if (loading) {
-    return <div className="text-center">Yükleniyor...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 text-red-800 p-4 rounded-md">
-          {error}
-        </div>
-      </div>
-    );
-  }
+  const handleDeleteStudent = async (studentId) => {
+    try {
+      await axios.delete(`http://localhost:3001/students/${studentId}/admin/courses/${id}`);
+      setSuccess('Öğrenci dersten başarıyla silindi');
+      // Öğrenci listesini güncelle
+      await fetchEnrolledStudents();
+      
+      // 3 saniye sonra başarı mesajını kaldır
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
+    } catch (error) {
+      console.error('Error deleting student:', error);
+      setErrors(['Öğrenci silinirken bir hata oluştu']);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -81,6 +84,14 @@ export default function CourseDetail() {
         </div>
       </div>
 
+      <ErrorMap errors={errors} />
+
+      {success && (
+        <div className="mb-4 p-4 bg-green-50 text-green-800 rounded-md">
+          {success}
+        </div>
+      )}
+
       {showEditForm ? (
         <CourseForm
           initialData={course}
@@ -98,13 +109,13 @@ export default function CourseDetail() {
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Ders Adı</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {course?.name}
+                    {course?.name || 'Yükleniyor...'}
                   </dd>
                 </div>
                 <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">İçerik</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {course?.content}
+                    {course?.content || 'Yükleniyor...'}
                   </dd>
                 </div>
               </dl>
@@ -115,28 +126,12 @@ export default function CourseDetail() {
             <div className="px-4 py-5 sm:px-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900">Kayıtlı Öğrenciler</h3>
             </div>
-            <div className="border-t border-gray-200">
-              {students.length > 0 ? (
-                <ul className="divide-y divide-gray-200">
-                  {students.map((student) => (
-                    <li key={student.id} className="px-6 py-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">
-                            {student.firstName} {student.lastName}
-                          </h4>
-                          <p className="text-sm text-gray-500">{student.email}</p>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="text-center py-4 text-gray-500">
-                  Bu derse henüz kayıtlı öğrenci bulunmamaktadır.
-                </div>
-              )}
-            </div>
+            <StudentMap 
+              students={students}
+              onDeleteStudent={handleDeleteStudent}
+              showViewButton={false}
+              emptyMessage="Bu derse kayıtlı öğrenci bulunmamaktadır."
+            />
           </div>
         </>
       )}

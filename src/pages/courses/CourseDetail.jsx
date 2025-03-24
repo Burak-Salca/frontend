@@ -14,6 +14,7 @@ export default function CourseDetail() {
   const [error, setError] = useState([]);
   const [showEditForm, setShowEditForm] = useState(false);
   const [success, setSuccess] = useState('');
+  const [emptyMessage, setEmptyMessage] = useState('');
 
   const fetchCourse = async () => {
     try {
@@ -29,7 +30,12 @@ export default function CourseDetail() {
       const response = await axios.get(`http://localhost:3001/courses/${id}/students`);
       setStudents(response.data.data || []);
     } catch (error) {
-      catchError(error, setError);
+      if (error.response?.status === 404) {
+        setStudents([]);
+        setEmptyMessage(error.response.data.message);
+      } else {
+        catchError(error, setError);
+      }
     }
   };
 
@@ -50,10 +56,9 @@ export default function CourseDetail() {
     try {
       await axios.delete(`http://localhost:3001/students/${studentId}/admin/courses/${id}`);
       setSuccess('Öğrenci dersten başarıyla silindi');
-      // Öğrenci listesini güncelle
+  
       await fetchEnrolledStudents();
       
-      // 3 saniye sonra başarı mesajını kaldır
       setTimeout(() => {
         setSuccess('');
       }, 3000);
@@ -128,7 +133,7 @@ export default function CourseDetail() {
               students={students}
               onDeleteStudent={handleDeleteStudent}
               showViewButton={false}
-              emptyMessage="Bu derse kayıtlı öğrenci bulunmamaktadır."
+              emptyMessage={emptyMessage}
             />
           </div>
         </>

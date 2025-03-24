@@ -25,7 +25,7 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
 
     try {
       if (initialData?.id) {
-        await axios.put(`http://localhost:3001/courses/${initialData.id}`, formData);
+        await axios.patch(`http://localhost:3001/courses/${initialData.id}`, formData);
       } else {
         await axios.post('http://localhost:3001/courses', formData);
       }

@@ -12,11 +12,12 @@ export default function StudentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [student, setStudent] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState([]);
   const [showEditForm, setShowEditForm] = useState(false);
   const { user } = useContext(AuthContext);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [availableCourses, setAvailableCourses] = useState([]);
+  const [success, setSuccess] = useState('');
 
   const fetchStudent = async () => {
     try {
@@ -49,13 +50,23 @@ export default function StudentDetail() {
 
   const handleAddCourse = async () => {
     if (!selectedCourse) return;
-
+    
     try {
       await axios.post(`http://localhost:3001/students/${id}/admin/courses/${selectedCourse}`);
-      setSelectedCourse('');
-      fetchStudent();
+      setSuccess('Öğrenci derse başarıyla eklendi');
+      setError([]);
+      setSelectedCourse(''); // Seçimi sıfırla
+      await fetchAvailableCourses();
+      await fetchStudent();
+      
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
     } catch (err) {
-      catchError(err, setError);
+      setError([err.response?.data?.message || 'Bir hata oluştu']);
+      setTimeout(() => {
+        setError([]);
+      }, 3000);
     }
   };
 
@@ -63,14 +74,21 @@ export default function StudentDetail() {
     if (window.confirm('Bu dersi silmek istediğinizden emin misiniz?')) {
       try {
         await axios.delete(`http://localhost:3001/students/${id}/admin/courses/${courseId}`);
-        fetchStudent();
+        setSuccess('Ders başarıyla silindi');
+        setError([]);
+        await fetchStudent();
+        
+        setTimeout(() => {
+          setSuccess('');
+        }, 3000);
       } catch (err) {
-        catchError(err, setError);
+        setError([err.response?.data?.message || 'Bir hata oluştu']);
+        setTimeout(() => {
+          setError([]);
+        }, 3000);
       }
     }
   };
-
-  <ErrorMap errors={error} />
 
   if (!student) {
     return (
@@ -99,6 +117,14 @@ export default function StudentDetail() {
           </button>
         </div>
       </div>
+
+      <ErrorMap errors={error}/>
+      
+      {success && (
+        <div className="mb-4 p-4 bg-green-50 text-green-800 rounded-md">
+          {success}
+        </div>
+      )}
 
       {showEditForm ? (
         <div className="bg-white shadow sm:rounded-lg p-6">

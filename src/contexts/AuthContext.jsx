@@ -11,6 +11,24 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    // Axios interceptor ekle
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Cleanup interceptor
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
+  useEffect(() => {
     const token = localStorage.getItem('token');
     if (token && token !== 'undefined') {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;

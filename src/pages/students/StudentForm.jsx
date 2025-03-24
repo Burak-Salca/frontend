@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import ErrorMap from '../../components/ErrorMap';
 
 export default function StudentForm({ initialData, onSuccess, onCancel }) {
   const [formData, setFormData] = useState({
@@ -13,17 +14,35 @@ export default function StudentForm({ initialData, onSuccess, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const dataToSend = { ...formData };
+      
+      // Şifre boş ise request body'den çıkar
+      if (!dataToSend.password) {
+        delete dataToSend.password;
+      }
+
       if (initialData?.id) {
-        // Düzenleme işlemi
-        await axios.put(`http://localhost:3001/students/${initialData.id}`, formData);
+        await axios.patch(`http://localhost:3001/students/${initialData.id}`, dataToSend);
       } else {
-        // Ekleme işlemi
-        await axios.post('http://localhost:3001/students', formData);
+        await axios.post('http://localhost:3001/students', dataToSend);
       }
       onSuccess();
-    } catch (error) {
-      setError(error.response?.data?.message || 'Bir hata oluştu');
-      console.error('Error submitting form:', error);
+    } catch (err) {
+      console.error('Student form hatası:', err);
+      
+      if (err.response?.data?.data) {
+        const allErrors = [];
+        for (const error of err.response.data.data) {
+          for (const message of error.errors) {
+            allErrors.push(message);
+          }
+        }
+        setError(allErrors);
+      } else if (err.response?.data?.message) {
+        setError([err.response.data.message]);
+      } else {
+        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
+      }
     }
   };
 
@@ -36,12 +55,8 @@ export default function StudentForm({ initialData, onSuccess, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <div className="bg-red-50 text-red-800 p-4 rounded-md">
-          {error}
-        </div>
-      )}
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <ErrorMap errors={error} />
 
       <div>
         <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
@@ -85,21 +100,19 @@ export default function StudentForm({ initialData, onSuccess, onCancel }) {
         />
       </div>
 
-      {!initialData && (
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Şifre
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-        </div>
-      )}
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          {initialData ? 'Şifre (Boş bırakırsanız değişmeyecektir)' : 'Şifre'}
+        </label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        />
+      </div>
 
       <div className="flex justify-end space-x-2">
         {onCancel && (

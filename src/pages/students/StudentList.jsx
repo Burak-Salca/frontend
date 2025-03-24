@@ -3,10 +3,9 @@ import axios from 'axios';
 import StudentForm from './StudentForm';
 import { useNavigate } from 'react-router-dom';
 import StudentMap from '../../components/StudentMap';
-
+import ErrorMap from '../../components/ErrorMap';
 export default function StudentList() {
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -14,16 +13,25 @@ export default function StudentList() {
 
   const fetchStudents = async () => {
     try {
-      setLoading(true);
       const response = await axios.get('http://localhost:3001/students');
       setStudents(response.data.data || []);
       setError(null);
-    } catch (error) {
-      setError('Öğrenci listesi yüklenirken bir hata oluştu');
-      console.error('Error fetching students:', error);
-      setStudents([]);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('Student error:', err);
+      
+      if (err.response?.data?.data) {
+        const allErrors = [];
+        for (const error of err.response.data.data) {
+          for (const message of error.errors) {
+            allErrors.push(message);
+          }
+        }
+        setError(allErrors);
+      } else if (err.response?.data?.message) {
+        setError([err.response.data.message]);
+      } else {
+        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
+      }
     }
   };
 
@@ -37,9 +45,22 @@ export default function StudentList() {
         await axios.delete(`http://localhost:3001/students/${id}`);
         await fetchStudents();
         alert('Öğrenci başarıyla silindi!');
-      } catch (error) {
-        setError('Öğrenci silinirken bir hata oluştu');
-        console.error('Error deleting student:', error);
+      } catch (err) {
+        console.error('Student error:', err);
+        
+        if (err.response?.data?.data) {
+          const allErrors = [];
+          for (const error of err.response.data.data) {
+            for (const message of error.errors) {
+              allErrors.push(message);
+            }
+          }
+          setError(allErrors);
+        } else if (err.response?.data?.message) {
+          setError([err.response.data.message]);
+        } else {
+          setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
+        }
       }
     }
   };
@@ -53,10 +74,6 @@ export default function StudentList() {
   const handleViewStudent = (studentId) => {
     navigate(`/students/${studentId}`);
   };
-
-  if (loading) {
-    return <div className="text-center">Yükleniyor...</div>;
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -73,11 +90,7 @@ export default function StudentList() {
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 text-red-800 p-4 rounded-md mb-4">
-          {error}
-        </div>
-      )}
+      <ErrorMap errors={error} />
 
       {showForm && (
         <div className="bg-white shadow sm:rounded-lg p-6 mb-6">

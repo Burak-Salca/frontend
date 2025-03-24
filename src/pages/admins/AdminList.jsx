@@ -7,7 +7,7 @@ import AdminMap from '../../components/AdminMap';
 
 export default function AdminList() {
   const [admins, setAdmins] = useState([]);
-  const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [success, setSuccess] = useState('');
   const { user } = useContext(AuthContext);
@@ -18,11 +18,23 @@ export default function AdminList() {
       // Giriş yapan admin'i listeden çıkar
       const filteredAdmins = response.data.data.filter(admin => admin.id !== user.id);
       setAdmins(filteredAdmins || []);
-      setErrors([]);
+      setError([]);
     } catch (err) {
-      console.error('Error fetching admins:', err);
-      setErrors(['Adminler yüklenirken bir hata oluştu.']);
-      setAdmins([]);
+      console.error('Admin list hatası:', err);
+      
+      if (err.response?.data?.data) {
+        const allErrors = [];
+        for (const error of err.response.data.data) {
+          for (const message of error.errors) {
+            allErrors.push(message);
+          }
+        }
+        setError(allErrors);
+      } else if (err.response?.data?.message) {
+        setError([err.response.data.message]);
+      } else {
+        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
+      }
     }
   };
 
@@ -41,8 +53,21 @@ export default function AdminList() {
           setSuccess('');
         }, 3000);
       } catch (err) {
-        console.error('Error deleting admin:', err);
-        setErrors(['Admin silinirken bir hata oluştu.']);
+        console.error('Admin list delete error:', err);
+        
+        if (err.response?.data?.data) {
+          const allErrors = [];
+          for (const error of err.response.data.data) {
+            for (const message of error.errors) {
+              allErrors.push(message);
+            }
+          }
+          setError(allErrors);
+        } else if (err.response?.data?.message) {
+          setError([err.response.data.message]);
+        } else {
+          setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
+        }
       }
     }
   };
@@ -64,7 +89,7 @@ export default function AdminList() {
         </button>
       </div>
 
-      <ErrorMap errors={errors} />
+      <ErrorMap errors={error} />
 
       {success && (
         <div className="mb-4 p-4 bg-green-50 text-green-800 rounded-md">

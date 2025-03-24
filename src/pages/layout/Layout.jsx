@@ -30,10 +30,9 @@ export default function Layout() {
   const handleLogout = async () => {
     try {
       await axios.post('http://localhost:3001/auth/logout');
-      logout();
-      navigate('/login');
     } catch (error) {
-      catchError(error, setError);
+      console.error('Logout error:', error);
+    } finally {
       logout();
       navigate('/login');
     }

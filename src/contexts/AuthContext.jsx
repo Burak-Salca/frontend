@@ -10,37 +10,22 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const checkLocalStorage = () => {
+  useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('userData');
-
-    if (token && token !== 'undefined' && userData) {
-      try {
-        const parsedUserData = JSON.parse(userData);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        setUser(parsedUserData);
+    if (token && token !== 'undefined') {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      if (userData) {
+        setUser(userData);
         setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Local storage parse error:', error);
-        clearAuthData();
       }
     } else {
-      clearAuthData();
+      localStorage.removeItem('token');
+      localStorage.removeItem('userData');
+      delete axios.defaults.headers.common['Authorization'];
+      setIsAuthenticated(false);
     }
-  };
-
-  useEffect(() => {
-    checkLocalStorage();
   }, []);
-
-  const clearAuthData = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userData');
-    delete axios.defaults.headers.common['Authorization'];
-    setUser(null);
-    setIsAuthenticated(false);
-    setError(null);
-  };
 
   const login = async (email, password, role) => {
     try {
@@ -71,7 +56,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    clearAuthData();
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
+    setError(null);
+    setIsAuthenticated(false);
   };
 
   const value = {

@@ -3,12 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AdminForm from './AdminForm';
 import ErrorMap from '../../components/ErrorMap';
+import { catchError } from '../../utils/CatchError';
 
 export default function AdminDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [admin, setAdmin] = useState(null);
-  const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
   const [showEditForm, setShowEditForm] = useState(false);
   const [success, setSuccess] = useState('');
 
@@ -17,8 +18,7 @@ export default function AdminDetail() {
       const response = await axios.get(`http://localhost:3001/admins/${id}`);
       setAdmin(response.data.data);
     } catch (error) {
-      setErrors(['Admin bilgileri yüklenirken bir hata oluştu']);
-      console.error('Error fetching admin:', error);
+      catchError(error, setError);
     }
   };
 
@@ -56,7 +56,7 @@ export default function AdminDetail() {
         </div>
       </div>
 
-      <ErrorMap errors={errors} />
+      <ErrorMap errors={error} />
 
       {success && (
         <div className="mb-4 p-4 bg-green-50 text-green-800 rounded-md">
@@ -80,19 +80,19 @@ export default function AdminDetail() {
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Ad</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {admin?.firstName || 'Yükleniyor...'}
+                  {admin?.firstName }
                 </dd>
               </div>
               <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">Soyad</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {admin?.lastName || 'Yükleniyor...'}
+                  {admin?.lastName }
                 </dd>
               </div>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt className="text-sm font-medium text-gray-500">E-posta</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {admin?.email || 'Yükleniyor...'}
+                  {admin?.email }
                 </dd>
               </div>
             </dl>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import ErrorMap from '../../components/ErrorMap';
-
+import { catchError } from '../../utils/CatchError';
 export default function StudentForm({ initialData, onSuccess, onCancel }) {
   const [formData, setFormData] = useState({
     firstName: initialData?.firstName || '',
@@ -28,21 +28,7 @@ export default function StudentForm({ initialData, onSuccess, onCancel }) {
       }
       onSuccess();
     } catch (err) {
-      console.error('Student form hatası:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setError(allErrors);
-      } else if (err.response?.data?.message) {
-        setError([err.response.data.message]);
-      } else {
-        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+        catchError(err, setError);
     }
   };
 

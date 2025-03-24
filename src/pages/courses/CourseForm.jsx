@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ErrorMap from '../../components/ErrorMap';
+import { catchError } from '../../utils/CatchError';
 
 export default function CourseForm({ onSuccess, onCancel, initialData = null }) {
   const [formData, setFormData] = useState({
     name: '',
     content: ''
   });
-  const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
 
   useEffect(() => {
     if (initialData) {
@@ -20,7 +21,7 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors([]);
+    setError([]);
 
     try {
       if (initialData?.id) {
@@ -30,21 +31,7 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
       }
       onSuccess();
     } catch (err) {
-      console.error('Course form error:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setErrors(allErrors);
-      } else if (err.response?.data?.message) {
-        setErrors([err.response.data.message]);
-      } else {
-        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -59,8 +46,8 @@ export default function CourseForm({ onSuccess, onCancel, initialData = null }) 
   return (
     <div className="bg-white shadow sm:rounded-lg p-6 mb-6">
       <form onSubmit={handleSubmit}>
-        
-        <ErrorMap errors={errors} />
+
+        <ErrorMap errors={error} />
         
         <div className="mb-4">
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">

@@ -4,13 +4,14 @@ import axios from 'axios';
 import CourseForm from './CourseForm';
 import ErrorMap from '../../components/ErrorMap';
 import StudentMap from '../../components/StudentMap';
+import { catchError } from '../../utils/CatchError';
 
 export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [students, setStudents] = useState([]);
-  const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
   const [showEditForm, setShowEditForm] = useState(false);
   const [success, setSuccess] = useState('');
 
@@ -19,8 +20,7 @@ export default function CourseDetail() {
       const response = await axios.get(`http://localhost:3001/courses/${id}`);
       setCourse(response.data.data);
     } catch (error) {
-      setErrors(['Ders bilgileri yüklenirken bir hata oluştu']);
-      console.error('Error fetching course:', error);
+      catchError(error, setError);
     }
   };
 
@@ -29,8 +29,7 @@ export default function CourseDetail() {
       const response = await axios.get(`http://localhost:3001/courses/${id}/students`);
       setStudents(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching enrolled students:', error);
-      setErrors(['Kayıtlı öğrenciler yüklenirken bir hata oluştu']);
+      catchError(error, setError);
     }
   };
 
@@ -59,8 +58,7 @@ export default function CourseDetail() {
         setSuccess('');
       }, 3000);
     } catch (error) {
-      console.error('Error deleting student:', error);
-      setErrors(['Öğrenci silinirken bir hata oluştu']);
+      catchError(error, setError);
     }
   };
 
@@ -84,7 +82,7 @@ export default function CourseDetail() {
         </div>
       </div>
 
-      <ErrorMap errors={errors} />
+      <ErrorMap errors={error} />
 
       {success && (
         <div className="mb-4 p-4 bg-green-50 text-green-800 rounded-md">
@@ -109,13 +107,13 @@ export default function CourseDetail() {
                 <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">Ders Adı</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {course?.name || 'Yükleniyor...'}
+                    {course?.name}
                   </dd>
                 </div>
                 <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                   <dt className="text-sm font-medium text-gray-500">İçerik</dt>
                   <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    {course?.content || 'Yükleniyor...'}
+                    {course?.content }
                   </dd>
                 </div>
               </dl>

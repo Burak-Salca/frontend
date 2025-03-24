@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import StudentForm from './StudentForm';
 import { useNavigate } from 'react-router-dom';
 import StudentMap from '../../components/StudentMap';
 import ErrorMap from '../../components/ErrorMap';
+import { AuthContext } from '../../contexts/AuthContext';
+import { catchError } from '../../utils/CatchError';
+
 export default function StudentList() {
   const [students, setStudents] = useState([]);
   const [error, setError] = useState(null);
@@ -15,23 +18,8 @@ export default function StudentList() {
     try {
       const response = await axios.get('http://localhost:3001/students');
       setStudents(response.data.data || []);
-      setError(null);
     } catch (err) {
-      console.error('Student error:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setError(allErrors);
-      } else if (err.response?.data?.message) {
-        setError([err.response.data.message]);
-      } else {
-        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -43,24 +31,9 @@ export default function StudentList() {
     if (window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz?')) {
       try {
         await axios.delete(`http://localhost:3001/students/${id}`);
-        await fetchStudents();
-        alert('Öğrenci başarıyla silindi!');
+        fetchStudents();
       } catch (err) {
-        console.error('Student error:', err);
-        
-        if (err.response?.data?.data) {
-          const allErrors = [];
-          for (const error of err.response.data.data) {
-            for (const message of error.errors) {
-              allErrors.push(message);
-            }
-          }
-          setError(allErrors);
-        } else if (err.response?.data?.message) {
-          setError([err.response.data.message]);
-        } else {
-          setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-        }
+        catchError(err, setError);
       }
     }
   };

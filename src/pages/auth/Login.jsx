@@ -2,12 +2,14 @@ import { useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useState } from 'react';
+import { catchError } from '../../utils/CatchError';
+import ErrorMap from '../../components/ErrorMap';
 
 export default function Login() {
   const navigate = useNavigate();
   const authContext = useContext(AuthContext);
   const { login, isAuthenticated } = authContext;
-  const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
   
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors([]);
+    setError([]);
 
     const formData = {
       email: e.target.email.value,
@@ -27,7 +29,7 @@ export default function Login() {
     };
 
     if (!formData.role) {
-      setErrors(['Rol seçimi zorunludur']);
+      setError(['Rol seçimi zorunludur']);
       return;
     }
 
@@ -35,20 +37,7 @@ export default function Login() {
       await login(formData.email, formData.password, formData.role);
       navigate('/profile');
     } catch (err) {
-      console.error('Login error:', err);
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setErrors(allErrors);
-      } else if (err.response?.data?.message) {
-        setErrors([err.response.data.message]);
-      } else {
-        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -59,19 +48,9 @@ export default function Login() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Hesabınıza giriş yapın
           </h2>
-          {errors.length > 0 && (
-            <div className="mt-4 bg-red-50 border border-red-400 rounded-md p-4">
-              <div className="text-red-700">
-                <ul className="list-disc list-inside">
-                  {errors.map((error, index) => (
-                    <li key={index} className="text-sm">
-                      {error}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+
+          <ErrorMap errors={error} />
+
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="rounded-md shadow-sm -space-y-px">

@@ -4,6 +4,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 import AdminForm from './AdminForm';
 import ErrorMap from '../../components/ErrorMap';
 import AdminMap from '../../components/AdminMap';
+import { catchError } from '../../utils/CatchError';
 
 export default function AdminList() {
   const [admins, setAdmins] = useState([]);
@@ -20,21 +21,7 @@ export default function AdminList() {
       setAdmins(filteredAdmins || []);
       setError([]);
     } catch (err) {
-      console.error('Admin list hatası:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setError(allErrors);
-      } else if (err.response?.data?.message) {
-        setError([err.response.data.message]);
-      } else {
-        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -53,21 +40,7 @@ export default function AdminList() {
           setSuccess('');
         }, 3000);
       } catch (err) {
-        console.error('Admin list delete error:', err);
-        
-        if (err.response?.data?.data) {
-          const allErrors = [];
-          for (const error of err.response.data.data) {
-            for (const message of error.errors) {
-              allErrors.push(message);
-            }
-          }
-          setError(allErrors);
-        } else if (err.response?.data?.message) {
-          setError([err.response.data.message]);
-        } else {
-          setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-        }
+        catchError(err, setError);
       }
     }
   };

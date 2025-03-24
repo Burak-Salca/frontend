@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import ErrorMap from '../../components/ErrorMap';
+import { catchError } from '../../utils/CatchError';
 
 export default function Register() {
   const navigate = useNavigate();
-  const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors([]);
+    setError([]);
 
     const formData = {
       firstName: e.target.firstName.value,
@@ -19,7 +21,7 @@ export default function Register() {
     };
 
     if (!formData.type) {
-      setErrors(['Rol seçimi zorunludur']);
+      setError(['Rol seçimi zorunludur']);
       return;
     }
 
@@ -32,20 +34,7 @@ export default function Register() {
       alert('Kayıt başarılı! Giriş yapabilirsiniz.');
       navigate('/login');
     } catch (err) {
-      console.error('Kayıt hatası:', err);
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setErrors(allErrors);
-      } else if (err.response?.data?.message) {
-        setErrors([err.response.data.message]);
-      } else {
-        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -56,19 +45,9 @@ export default function Register() {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Yeni Hesap Oluştur
           </h2>
-          {errors.length > 0 && (
-            <div className="mt-4 bg-red-50 border border-red-400 rounded-md p-4">
-              <div className="text-red-700">
-                <ul className="list-disc list-inside">
-                  {errors.map((error, index) => (
-                    <li key={index} className="text-sm">
-                      {error}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+          
+          <ErrorMap errors={error} />
+
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
           <div className="rounded-md shadow-sm -space-y-px">

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
-export default function CourseMap({ courses, user, onEnroll, onDelete, showViewButton, emptyMessage }) {
+export default function CourseMap({ courses, user, onEnroll, onDelete, showViewButton, emptyMessage, isEnrolled = false }) {
   const navigate = useNavigate();
 
   if (!courses || courses.length === 0) {
@@ -18,30 +18,38 @@ export default function CourseMap({ courses, user, onEnroll, onDelete, showViewB
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium text-gray-900">
-                {course.name }
+                {course.name}
               </h3>
               <p className="text-sm text-gray-500">
                 {course.content}
               </p>
             </div>
             <div className="flex space-x-2">
-              {user.type === 'student' && (
+              {user.type === 'student' && !isEnrolled && (
                 <button
                   onClick={() => onEnroll(course.id)}
-                  className="text-green-600 hover:text-green-800 font-medium"
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Kayıt Ol
                 </button>
               )}
+              {user.type === 'student' && isEnrolled && (
+                <button
+                  onClick={() => onDelete(course.id)}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Kaydı Sil
+                </button>
+              )}
               {user.type === 'admin' && (
                 <>
-                {showViewButton && (
-                  <button
-                    onClick={() => navigate(`/courses/${course.id}`)}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Görüntüle
-                  </button>
+                  {showViewButton && (
+                    <button
+                      onClick={() => navigate(`/courses/${course.id}`)}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Görüntüle
+                    </button>
                   )}
                   <button
                     onClick={() => onDelete(course.id)}

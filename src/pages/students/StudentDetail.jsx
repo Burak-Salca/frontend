@@ -6,6 +6,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 import CourseMap from '../../components/CourseMap';
 import ErrorMap from '../../components/ErrorMap';
 import CourseSelector from '../../components/CourseSelector';
+import { catchError } from '../../utils/CatchError';
 
 export default function StudentDetail() {
   const { id } = useParams();
@@ -23,21 +24,7 @@ export default function StudentDetail() {
       setStudent(response.data.data);
       setError(null);
     } catch (err) {
-      console.error('Student detail hatası:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setError(allErrors);
-      } else if (err.response?.data?.message) {
-        setError([err.response.data.message]);
-      } else {
-        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -46,21 +33,7 @@ export default function StudentDetail() {
       const response = await axios.get('http://localhost:3001/courses');
       setAvailableCourses(response.data.data || []);
     } catch (err) {
-      console.error('Student detail hatası:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setError(allErrors);
-      } else if (err.response?.data?.message) {
-        setError([err.response.data.message]);
-      } else {
-        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -82,21 +55,7 @@ export default function StudentDetail() {
       setSelectedCourse('');
       fetchStudent();
     } catch (err) {
-      console.error('Student detail hatası:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setError(allErrors);
-      } else if (err.response?.data?.message) {
-        setError([err.response.data.message]);
-      } else {
-        setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -106,21 +65,7 @@ export default function StudentDetail() {
         await axios.delete(`http://localhost:3001/students/${id}/admin/courses/${courseId}`);
         fetchStudent();
       } catch (err) {
-        console.error('Student detail hatası:', err);
-        
-        if (err.response?.data?.data) {
-          const allErrors = [];
-          for (const error of err.response.data.data) {
-            for (const message of error.errors) {
-              allErrors.push(message);
-            }
-          }
-          setError(allErrors);
-        } else if (err.response?.data?.message) {
-          setError([err.response.data.message]);
-        } else {
-          setError(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-        }
+        catchError(err, setError);
       }
     }
   };

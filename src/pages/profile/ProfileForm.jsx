@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ErrorMap from '../../components/ErrorMap';
+import { catchError } from '../../utils/CatchError';
 
 export default function ProfileForm({ initialData, onSuccess, onCancel }) {
   const [formData, setFormData] = useState({
@@ -9,7 +10,7 @@ export default function ProfileForm({ initialData, onSuccess, onCancel }) {
     lastName: '',
     password: '',
   });
-  const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
 
   useEffect(() => {
     if (initialData) {
@@ -31,7 +32,7 @@ export default function ProfileForm({ initialData, onSuccess, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors([]);
+    setError([]);
 
     const dataToSend = { ...formData };
     if (!dataToSend.password) {
@@ -46,28 +47,14 @@ export default function ProfileForm({ initialData, onSuccess, onCancel }) {
       await axios.patch(endpoint, dataToSend);
       onSuccess(dataToSend);
     } catch (err) {
-      console.error('Profile update error:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setErrors(allErrors);
-      } else if (err.response?.data?.message) {
-        setErrors([err.response.data.message]);
-      } else {
-        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-white shadow sm:rounded-lg p-6" noValidate>
     
-      <ErrorMap errors={errors} />
+      <ErrorMap errors={error} />
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">

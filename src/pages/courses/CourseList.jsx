@@ -4,10 +4,11 @@ import { AuthContext } from '../../contexts/AuthContext';
 import CourseForm from './CourseForm';
 import ErrorMap from '../../components/ErrorMap';
 import CourseMap from '../../components/CourseMap';
+import { catchError } from '../../utils/CatchError';
 
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
-  const [errors, setErrors] = useState([]);
+  const [error, setError] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const authContext = useContext(AuthContext);
   const { user } = authContext; // Usera göre işlem yapılacak 
@@ -17,11 +18,9 @@ export default function CourseList() {
     try {
       const response = await axios.get('http://localhost:3001/courses');
       setCourses(response.data.data || []);
-      setErrors([]);
+      setError([]);
     } catch (err) {
-      console.error('Error fetching courses:', err);
-      setErrors(['Dersler yüklenirken bir hata oluştu.']);
-      setCourses([]);
+      catchError(err, setError);
     }
   };
 
@@ -37,8 +36,7 @@ export default function CourseList() {
         await fetchCourses();
         alert('Ders başarıyla silindi!');
       } catch (err) {
-        console.error('Error deleting course:', err);
-        setErrors(['Ders silinirken bir hata oluştu.']);
+        catchError(err, setError);
       }
     }
   };
@@ -49,21 +47,7 @@ export default function CourseList() {
       await axios.post(`http://localhost:3001/students/profile/courses/${courseId}`);
       alert('Derse başarıyla kayıt oldunuz!');
     } catch (err) {
-      console.error('Profile update error:', err);
-      
-      if (err.response?.data?.data) {
-        const allErrors = [];
-        for (const error of err.response.data.data) {
-          for (const message of error.errors) {
-            allErrors.push(message);
-          }
-        }
-        setErrors(allErrors);
-      } else if (err.response?.data?.message) {
-        setErrors([err.response.data.message]);
-      } else {
-        setErrors(['Bir hata oluştu. Lütfen tekrar deneyin.']);
-      }
+      catchError(err, setError);
     }
   };
 
@@ -87,7 +71,7 @@ export default function CourseList() {
         )}
       </div>
 
-      <ErrorMap errors={errors} />
+      <ErrorMap errors={error} />
 
       {showForm && <CourseForm onSuccess={handleSuccess} onCancel={() => setShowForm(false)} />}
 

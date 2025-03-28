@@ -3,7 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import Layout from './pages/layout/Layout';
 import StudentList from './pages/students/StudentList';
 import StudentDetail from './pages/students/StudentDetail';
-import StudentCourseList from './pages/StudentCourse/StudentCourseList';
+import StudentCourseList from './pages/studentCourse/StudentCourseList';
 import CourseList from './pages/courses/CourseList';
 import EnrollmentList from './pages/enrollments/EnrollmentList';
 import Login from './pages/auth/Login';

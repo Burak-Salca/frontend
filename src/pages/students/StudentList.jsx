@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import StudentForm from './StudentForm';
 import { useNavigate } from 'react-router-dom';
 import StudentMap from '../../components/StudentMap';
@@ -12,12 +12,14 @@ export default function StudentList() {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
 
   const fetchStudents = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/students');
-      setStudents(response.data.data || []);
+      const response = await axios.get('/students');
+      setStudents(response.data.data);
+      setError([]);
     } catch (err) {
       catchError(err, setError);
     }
@@ -30,10 +32,19 @@ export default function StudentList() {
   const handleDelete = async (id) => {
     if (window.confirm('Bu öğrenciyi silmek istediğinizden emin misiniz?')) {
       try {
-        await axios.delete(`http://localhost:3001/students/${id}`);
+        await axios.delete(`/students/${id}`);
+        setSuccess('Öğrenci başarıyla silindi');
+        setError([]);
         fetchStudents();
+        
+        setTimeout(() => {
+          setSuccess('');
+        }, 3000);
       } catch (err) {
-        catchError(err, setError);
+        setError([err.response?.data?.message || 'Bir hata oluştu']);
+        setTimeout(() => {
+          setError([]);
+        }, 3000);
       }
     }
   };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import AdminForm from './AdminForm';
 import ErrorMap from '../../components/ErrorMap';
 import { catchError } from '../../utils/CatchError';
@@ -15,10 +15,11 @@ export default function AdminDetail() {
 
   const fetchAdmin = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/admins/${id}`);
+      const response = await axios.get(`/admins/${id}`);
       setAdmin(response.data.data);
-    } catch (error) {
-      catchError(error, setError);
+      setError(null);
+    } catch (err) {
+      catchError(err, setError);
     }
   };
 

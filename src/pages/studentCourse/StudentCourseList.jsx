@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import { catchError } from '../../utils/CatchError';
 import ErrorMap from '../../components/ErrorMap';
 import StudentCourseMap from '../../components/StudentCourseMap';
@@ -10,8 +10,9 @@ export default function StudentCourseList() {
 
   const fetchRelations = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/students/admin/student-course-relations');
-      setRelations(response.data.data || []);
+      const response = await axios.get('/students/admin/student-course-relations');
+      setRelations(response.data.data);
+      setError([]);
     } catch (err) {
       catchError(err, setError);
     }

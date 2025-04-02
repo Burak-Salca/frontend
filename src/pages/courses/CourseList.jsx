@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import { AuthContext } from '../../contexts/AuthContext';
 import CourseForm from './CourseForm';
 import ErrorMap from '../../components/ErrorMap';
@@ -16,8 +16,8 @@ export default function CourseList() {
 
   const fetchCourses = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/courses');
-      setCourses(response.data.data || []);
+      const response = await axios.get('/courses');
+      setCourses(response.data.data);
       setError([]);
     } catch (err) {
       catchError(err, setError);
@@ -32,11 +32,19 @@ export default function CourseList() {
   const handleDelete = async (id) => {
     if (window.confirm('Bu dersi silmek istediğinizden emin misiniz?')) {
       try {
-        await axios.delete(`http://localhost:3001/courses/${id}`);
-        await fetchCourses();
-        alert('Ders başarıyla silindi!');
+        await axios.delete(`/courses/${id}`);
+        setSuccess('Ders başarıyla silindi');
+        setError([]);
+        fetchCourses();
+        
+        setTimeout(() => {
+          setSuccess('');
+        }, 3000);
       } catch (err) {
-        catchError(err, setError);
+        setError([err.response?.data?.message || 'Bir hata oluştu']);
+        setTimeout(() => {
+          setError([]);
+        }, 3000);
       }
     }
   };

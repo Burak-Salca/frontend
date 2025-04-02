@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import ErrorMap from '../../components/ErrorMap';
 import { catchError } from '../../utils/CatchError';
 export default function StudentForm({ initialData, onSuccess, onCancel }) {
@@ -10,6 +10,7 @@ export default function StudentForm({ initialData, onSuccess, onCancel }) {
     password: ''
   });
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,14 +22,24 @@ export default function StudentForm({ initialData, onSuccess, onCancel }) {
         delete dataToSend.password;
       }
 
-      if (initialData?.id) {
-        await axios.patch(`http://localhost:3001/students/${initialData.id}`, dataToSend);
+      if (initialData) {
+        await axios.put(`/students/${initialData.id}`, dataToSend);
+        setSuccess('Öğrenci başarıyla güncellendi');
       } else {
-        await axios.post('http://localhost:3001/students', dataToSend);
+        await axios.post('/students', dataToSend);
+        setSuccess('Öğrenci başarıyla oluşturuldu');
       }
+      setError([]);
       onSuccess();
+      
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
     } catch (err) {
-        catchError(err, setError);
+      setError([err.response?.data?.message || 'Bir hata oluştu']);
+      setTimeout(() => {
+        setError([]);
+      }, 3000);
     }
   };
 

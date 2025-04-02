@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import ErrorMap from '../../components/ErrorMap';
 import { catchError } from '../../utils/CatchError';
 
@@ -26,15 +26,13 @@ export default function Register() {
     }
 
     try {
-      const endpoint = formData.type === 'admin' 
-        ? 'http://localhost:3001/auth/admin/register'
-        : 'http://localhost:3001/auth/student/register';
-
-      await axios.post(endpoint, formData);
-      alert('Kayıt başarılı! Giriş yapabilirsiniz.');
-      navigate('/login');
+      const response = await axios.post('/auth/register', formData);
+      const { token, user } = response.data.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('userData', JSON.stringify(user));
+      navigate('/');
     } catch (err) {
-      catchError(err, setError);
+      setError([err.response?.data?.message || 'Kayıt başarısız']);
     }
   };
 

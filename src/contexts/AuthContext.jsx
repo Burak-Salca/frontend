@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../utils/axios';
 
 export const AuthContext = createContext(null);
 
@@ -45,31 +45,33 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async (email, password, role) => {
+  const login = async (email, password) => {
     try {
-      setError(null);
-      const response = await axios.post(`http://localhost:3001/auth/${role}/login`, {
-        email,
-        password,
-      });
-      
-      const { access_token, user: userData } = response.data;
-      
-      if (!access_token || access_token === 'undefined') {
-        throw new Error('Geçersiz access_token');
-      }
-      
-      localStorage.setItem('token', access_token);
-      localStorage.setItem('userData', JSON.stringify(userData));
-      
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-      setUser(userData);
+      const response = await axios.post('/auth/login', { email, password });
+      const { token, user } = response.data.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('userData', JSON.stringify(user));
       setIsAuthenticated(true);
-      return userData;
+      setUser(user);
+      return true;
     } catch (error) {
-      console.error('Login Error:', error);
-      setError(error.response?.data?.message || error.message || 'Giriş işlemi başarısız oldu');
-      throw error;
+      setError(error.response?.data?.message || 'Giriş başarısız');
+      return false;
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await axios.post('/auth/register', userData);
+      const { token, user } = response.data.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('userData', JSON.stringify(user));
+      setIsAuthenticated(true);
+      setUser(user);
+      return true;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Kayıt başarısız');
+      return false;
     }
   };
 

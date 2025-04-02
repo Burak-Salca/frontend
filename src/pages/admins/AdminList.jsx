@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import { AuthContext } from '../../contexts/AuthContext';
 import AdminForm from './AdminForm';
 import ErrorMap from '../../components/ErrorMap';
@@ -15,7 +15,7 @@ export default function AdminList() {
 
   const fetchAdmins = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/admins');
+      const response = await axios.get('/admins');
       // Giriş yapan admin'i listeden çıkar
       const filteredAdmins = response.data.data.filter(admin => admin.id !== user.id);
       setAdmins(filteredAdmins || []);
@@ -32,15 +32,19 @@ export default function AdminList() {
   const handleDelete = async (id) => {
     if (window.confirm('Bu admini silmek istediğinizden emin misiniz?')) {
       try {
-        await axios.delete(`http://localhost:3001/admins/${id}`);
+        await axios.delete(`/admins/${id}`);
         setSuccess('Admin başarıyla silindi');
-        await fetchAdmins();
+        setError([]);
+        fetchAdmins();
         
         setTimeout(() => {
           setSuccess('');
         }, 3000);
       } catch (err) {
-        catchError(err, setError);
+        setError([err.response?.data?.message || 'Bir hata oluştu']);
+        setTimeout(() => {
+          setError([]);
+        }, 3000);
       }
     }
   };

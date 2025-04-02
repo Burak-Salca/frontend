@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import CourseForm from './CourseForm';
 import ErrorMap from '../../components/ErrorMap';
 import StudentMap from '../../components/StudentMap';
@@ -15,13 +15,15 @@ export default function CourseDetail() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [success, setSuccess] = useState('');
   const [emptyMessage, setEmptyMessage] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState('');
 
   const fetchCourse = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/courses/${id}`);
+      const response = await axios.get(`/courses/${id}`);
       setCourse(response.data.data);
-    } catch (error) {
-      catchError(error, setError);
+      setError(null);
+    } catch (err) {
+      catchError(err, setError);
     }
   };
 
@@ -52,18 +54,44 @@ export default function CourseDetail() {
     fetchCourse();
   };
 
-  const handleDeleteStudent = async (studentId) => {
+  const handleAddStudent = async () => {
+    if (!selectedStudent) return;
+    
     try {
-      await axios.delete(`http://localhost:3001/students/${studentId}/admin/courses/${id}`);
-      setSuccess('Öğrenci dersten başarıyla silindi');
-  
-      await fetchEnrolledStudents();
+      await axios.post(`/courses/${id}/admin/students/${selectedStudent}`);
+      setSuccess('Öğrenci derse başarıyla eklendi');
+      setError([]);
+      setSelectedStudent('');
+      await fetchCourse();
       
       setTimeout(() => {
         setSuccess('');
       }, 3000);
-    } catch (error) {
-      catchError(error, setError);
+    } catch (err) {
+      setError([err.response?.data?.message || 'Bir hata oluştu']);
+      setTimeout(() => {
+        setError([]);
+      }, 3000);
+    }
+  };
+
+  const handleRemoveStudent = async (studentId) => {
+    if (window.confirm('Bu öğrenciyi dersten çıkarmak istediğinizden emin misiniz?')) {
+      try {
+        await axios.delete(`/courses/${id}/admin/students/${studentId}`);
+        setSuccess('Öğrenci dersten başarıyla çıkarıldı');
+        setError([]);
+        await fetchCourse();
+        
+        setTimeout(() => {
+          setSuccess('');
+        }, 3000);
+      } catch (err) {
+        setError([err.response?.data?.message || 'Bir hata oluştu']);
+        setTimeout(() => {
+          setError([]);
+        }, 3000);
+      }
     }
   };
 
@@ -131,7 +159,7 @@ export default function CourseDetail() {
             </div>
             <StudentMap 
               students={students}
-              onDeleteStudent={handleDeleteStudent}
+              onDeleteStudent={handleRemoveStudent}
               showViewButton={false}
               emptyMessage={emptyMessage}
             />

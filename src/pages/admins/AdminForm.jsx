@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import ErrorMap from '../../components/ErrorMap';
 import { catchError } from '../../utils/CatchError';
 
@@ -11,6 +11,7 @@ export default function AdminForm({ onSuccess, onCancel, initialData = null }) {
     password: ''
   });
   const [error, setError] = useState([]);
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     if (initialData) {
@@ -25,22 +26,25 @@ export default function AdminForm({ onSuccess, onCancel, initialData = null }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError([]);
-
     try {
-      const dataToSend = { ...formData };
-      if (initialData?.id) {
-        // Güncelleme işleminde şifre boşsa gönderme
-        if (!dataToSend.password) {
-          delete dataToSend.password;
-        }
-        await axios.patch(`http://localhost:3001/admins/${initialData.id}`, dataToSend);
+      if (initialData) {
+        await axios.put(`/admins/${initialData.id}`, formData);
+        setSuccess('Admin başarıyla güncellendi');
       } else {
-        await axios.post('http://localhost:3001/admins', dataToSend);
+        await axios.post('/admins', formData);
+        setSuccess('Admin başarıyla oluşturuldu');
       }
+      setError([]);
       onSuccess();
+      
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
     } catch (err) {
-      catchError(err, setError);
+      setError([err.response?.data?.message || 'Bir hata oluştu']);
+      setTimeout(() => {
+        setError([]);
+      }, 3000);
     }
   };
 

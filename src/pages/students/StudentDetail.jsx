@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import StudentForm from './StudentForm';
 import { AuthContext } from '../../contexts/AuthContext';
 import CourseMap from '../../components/CourseMap';
@@ -21,7 +21,7 @@ export default function StudentDetail() {
 
   const fetchStudent = async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/students/${id}`);
+      const response = await axios.get(`/students/${id}`);
       setStudent(response.data.data);
       setError(null);
     } catch (err) {
@@ -31,7 +31,7 @@ export default function StudentDetail() {
 
   const fetchAvailableCourses = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/courses');
+      const response = await axios.get('/courses');
       setAvailableCourses(response.data.data || []);
     } catch (err) {
       catchError(err, setError);
@@ -52,10 +52,10 @@ export default function StudentDetail() {
     if (!selectedCourse) return;
     
     try {
-      await axios.post(`http://localhost:3001/students/${id}/admin/courses/${selectedCourse}`);
+      await axios.post(`/students/${id}/admin/courses/${selectedCourse}`);
       setSuccess('Öğrenci derse başarıyla eklendi');
       setError([]);
-      setSelectedCourse(''); // Seçimi sıfırla
+      setSelectedCourse('');
       await fetchAvailableCourses();
       await fetchStudent();
       
@@ -73,7 +73,7 @@ export default function StudentDetail() {
   const handleRemoveCourse = async (courseId) => {
     if (window.confirm('Bu dersi silmek istediğinizden emin misiniz?')) {
       try {
-        await axios.delete(`http://localhost:3001/students/${id}/admin/courses/${courseId}`);
+        await axios.delete(`/students/${id}/admin/courses/${courseId}`);
         setSuccess('Ders başarıyla silindi');
         setError([]);
         await fetchStudent();

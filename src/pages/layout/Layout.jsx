@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { useEffect, useContext } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import { AuthContext } from '../../contexts/AuthContext';
 import { catchError } from '../../utils/CatchError';
 export default function Layout() {
@@ -29,12 +29,13 @@ export default function Layout() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:3001/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
+      await axios.post('/auth/logout');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userData');
       logout();
       navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
     }
   };
 

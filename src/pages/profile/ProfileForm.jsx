@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../../utils/axios';
 import ErrorMap from '../../components/ErrorMap';
 import { catchError } from '../../utils/CatchError';
 
@@ -11,6 +11,7 @@ export default function ProfileForm({ initialData, onSuccess, onCancel }) {
     password: '',
   });
   const [error, setError] = useState([]);
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     if (initialData) {
@@ -32,22 +33,20 @@ export default function ProfileForm({ initialData, onSuccess, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError([]);
-
-    const dataToSend = { ...formData };
-    if (!dataToSend.password) {
-      delete dataToSend.password;
-    }
-
     try {
-      const endpoint = initialData?.type === 'admin' 
-        ? `http://localhost:3001/admins/${initialData.id}`
-        : 'http://localhost:3001/students/profile/update';
+      await axios.put('/profile', formData);
+      setSuccess('Profil başarıyla güncellendi');
+      setError([]);
+      onSuccess();
       
-      await axios.patch(endpoint, dataToSend);
-      onSuccess(dataToSend);
+      setTimeout(() => {
+        setSuccess('');
+      }, 3000);
     } catch (err) {
-      catchError(err, setError);
+      setError([err.response?.data?.message || 'Bir hata oluştu']);
+      setTimeout(() => {
+        setError([]);
+      }, 3000);
     }
   };
 
